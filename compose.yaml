@@ -1,0 +1,29 @@
+services:
+  server:
+    build: ./server 
+    image: "envoy-uds-repro/server"
+    command: "unix:///var/run/server.sock"
+    volumes:
+      - var_run:/var/run
+  envoy:
+    # image: "envoyproxy/envoy:distroless-dev"
+    image: "envoyproxy/envoy:contrib-debug-dev"
+    # entrypoint: "tail -f /dev/null"
+    entrypoint: "envoy -c /etc/envoy/envoy.yaml"
+    network_mode: host
+    depends_on:
+      server:
+        condition: service_started
+    volumes:
+    - var_run:/var/run
+    - "./envoy.yaml:/etc/envoy/envoy.yaml"
+  client:
+    build: ./client 
+    image: "envoy-uds-repro/client"
+    network_mode: host
+    depends_on:
+      envoy:
+        condition: service_started
+    command: "localhost:10000"
+volumes:
+  var_run:
